@@ -1,0 +1,208 @@
+# Commandes de base : 
+
+docker pull debian:buster
+docker run -p 80:80 -it debian:buster
+# install nginx et le demarre
+apt-get -y update && apt-get -y install nginx
+service nginx start
+cd /etc/nginx/sites-available
+# changement config nginx apres
+cat > default
+#
+ server {
+     listen 80;
+     listen [::]:80;
+     server_name localhost www.localhost;
+
+     return 301 https://$host$request_uri;
+ }
+ server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name localhost www.localhost;
+
+    ssl on;
+    ssl_certificate /etc/ssl/nginx-selfsigned.crt;
+    ssl_certificate_key /etc/ssl/nginx-selfsigned.key;
+
+    root /var/www/html;
+    autoindex on;
+    index index.html index.htm index.nginx-debian.html index.php;
+	location / {
+		try_files $uri $uri/ =404;
+	}
+	location ~ \.php$ {
+		include snippets/fastcgi-php.conf;
+		fastcgi_pass unix:/run/php/php7.3-fpm.sock;
+	}
+ }
+# install et lance MySQL
+apt-get -y install mariadb-server
+service mysql start
+# configure une base de donnees wordpress
+mariadb
+	CREATE DATABASE wordpress;
+	GRANT ALL PRIVILEGES ON wordpress.* TO 'root'@'localhost' WITH GRANT OPTION;
+	FLUSH PRIVILEGES;
+	update mysql.user set plugin='' where user='root';
+# installe php
+apt-get -y install php7.3 php-mysql php-fpm php-pdo php-gd php-cli php-mbstring
+# install wget
+apt-get -y install wget
+# telecharge phpmyadmin
+wget https://files.phpmyadmin.net/phpMyAdmin/5.0.1/phpMyAdmin-5.0.1-english.tar.gz
+# unzip
+tar -xf phpMyAdmin-5.0.1-english.tar.gz && rm -rf phpMyAdmin-5.0.1-english.tar.gz
+# renomme
+mv phpMyAdmin-5.0.1-english phpmyadmin
+# rentre dans le dossier
+cd phpmyadmin
+# changement config phpmyadmin
+cat > config.sample.inc.php
+#
+<?php
+/* vim: set expandtab sw=4 ts=4 sts=4: */
+/**
+ * phpMyAdmin sample configuration, you can use it as base for
+ * manual configuration. For easier setup you can use setup/
+ *
+ * All directives are explained in documentation in the doc/ folder
+ * or at <https://docs.phpmyadmin.net/>.
+ *
+ * @package PhpMyAdmin
+ */
+// declare(strict_types=1);
+
+/**
+ * This is needed for cookie based authentication to encrypt password in
+ * cookie. Needs to be 32 chars long.
+ */
+$cfg['blowfish_secret'] = 'abcdefghijklmnopqrstuvwxyz0123456789'; /* YOU MUST FILL IN THIS FOR COOKIE AUTH! */
+
+/**
+ * Servers configuration
+ */
+$i = 0;
+
+/**
+ * First server
+ */
+$i++;
+/* Authentication type */
+$cfg['Servers'][$i]['auth_type'] = 'cookie';
+/* Server parameters */
+$cfg['Servers'][$i]['host'] = 'localhost';
+$cfg['Servers'][$i]['compress'] = false;
+$cfg['Servers'][$i]['AllowNoPassword'] = true;
+/**
+ * Directories for saving/loading files from server
+ */
+$cfg['UploadDir'] = '';
+$cfg['SaveDir'] = '';
+# install wordpress
+wget https://wordpress.org/latest.tar.gz
+# unzip
+tar -xvzf latest.tar.gz && rm -rf latest.tar.gz
+cd wordpress
+# changement config php my admin
+cat > wp-config-sample.php
+#
+<?php
+
+// ** MySQL settings - You can get this info from your web host ** //
+/** The name of the database for WordPress */
+define( 'DB_NAME', 'wordpress' );
+
+/** MySQL database username */
+define( 'DB_USER', 'root' );
+
+/** MySQL database password */
+define( 'DB_PASSWORD', '' );
+
+/** MySQL hostname */
+define( 'DB_HOST', 'localhost' );
+
+/** Database Charset to use in creating database tables. */
+define( 'DB_CHARSET', 'utf8' );
+
+/** The Database Collate type. Don't change this if in doubt. */
+define( 'DB_COLLATE', '' );
+
+/**#@+
+ * Authentication Unique Keys and Salts.
+ *
+ * Change these to different unique phrases!
+ * You can generate these using the {@link https://api.wordpress.org/secret-key/1.1/salt/ WordPress.org secret-key service}
+ * You can change these at any point in time to invalidate all existing cookies. This will force all users to have to log in again.
+ *
+ * @since 2.6.0
+ */
+define( 'AUTH_KEY',         'put your unique phrase here' );
+define( 'SECURE_AUTH_KEY',  'put your unique phrase here' );
+define( 'LOGGED_IN_KEY',    'put your unique phrase here' );
+define( 'NONCE_KEY',        'put your unique phrase here' );
+define( 'AUTH_SALT',        'put your unique phrase here' );
+define( 'SECURE_AUTH_SALT', 'put your unique phrase here' );
+define( 'LOGGED_IN_SALT',   'put your unique phrase here' );
+define( 'NONCE_SALT',       'put your unique phrase here' );
+
+/**#@-*/
+
+/**
+ * WordPress Database Table prefix.
+ *
+ * You can have multiple installations in one database if you give each
+ * a unique prefix. Only numbers, letters, and underscores please!
+ */
+$table_prefix = 'wp_';
+
+/**
+ * For developers: WordPress debugging mode.
+ *
+ * Change this to true to enable the display of notices during development.
+ * It is strongly recommended that plugin and theme developers use WP_DEBUG
+ * in their development environments.
+ *
+ * For information on other constants that can be used for debugging,
+ * visit the Codex.
+ *
+ * @link https://codex.wordpress.org/Debugging_in_WordPress
+ */
+define( 'WP_DEBUG', false );
+
+/* That's all, stop editing! Happy publishing. */
+
+/** Absolute path to the WordPress directory. */
+if ( ! defined( 'ABSPATH' ) ) {
+	define( 'ABSPATH', dirname( __FILE__ ) . '/' );
+}
+
+/** Sets up WordPress vars and included files. */
+require_once( ABSPATH . 'wp-settings.php' );
+
+
+
+
+
+
+
+
+# Commandes bonus :
+
+ip addr show eth0 | grep inet | awk '{ print $2; }' | sed 's/\/.*$//'
+
+docker container run --detach --publish 8080:80 fhsinchy/hello-dock
+docker exec -it <image> bash
+--detach /pour laisser image ouverte sans terminal
+--publish /pour le mettre en ligne sur le port
+
+# list container
+docker container ls --all
+# stop container
+docker container stop <container identifier>
+# start container
+docker container start <container identifier>
+# restart container
+docker container restart <container identifier>
+# remove container
+docker container rm <container identifier>
