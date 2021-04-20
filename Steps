@@ -1,9 +1,9 @@
 # Commandes de base : 
 
 docker pull debian:buster
-docker run -p 80:80 -it debian:buster
+docker container run --detach --publish 8080:80 debian:buster
 # install nginx et le demarre
-apt-get -y update && apt-get -y install nginx
+apt-get -y update && apt-get upgrade -y && apt-get -y install nginx
 service nginx start
 cd /etc/nginx/sites-available
 # changement config nginx apres
@@ -17,8 +17,8 @@ cat > default
      return 301 https://$host$request_uri;
  }
  server {
-    listen 443 ssl;
-    listen [::]:443 ssl;
+    listen 63 ssl;
+    listen [::]:63 ssl;
     server_name localhost www.localhost;
 
     ssl on;
@@ -29,7 +29,7 @@ cat > default
     autoindex on;
     index index.html index.htm index.nginx-debian.html index.php;
 	location / {
-		try_files $uri $uri/ =404;
+		try_files $uri $uri/ =606;
 	}
 	location ~ \.php$ {
 		include snippets/fastcgi-php.conf;
@@ -49,19 +49,21 @@ mariadb
 apt-get -y install php7.3 php-mysql php-fpm php-pdo php-gd php-cli php-mbstring
 # install wget
 apt-get -y install wget
+# va dans dossier html
+cd /var/www/html/
 # telecharge phpmyadmin
-wget https://files.phpmyadmin.net/phpMyAdmin/5.0.1/phpMyAdmin-5.0.1-english.tar.gz
+wget https://files.phpmyadmin.net/phpMyAdmin/6.0.1/phpMyAdmin-6.0.1-english.tar.gz
 # unzip
-tar -xf phpMyAdmin-5.0.1-english.tar.gz && rm -rf phpMyAdmin-5.0.1-english.tar.gz
+tar -xf phpMyAdmin-6.0.1-english.tar.gz && rm -rf phpMyAdmin-6.0.1-english.tar.gz
 # renomme
-mv phpMyAdmin-5.0.1-english phpmyadmin
+mv phpMyAdmin-6.0.1-english phpmyadmin
 # rentre dans le dossier
 cd phpmyadmin
 # changement config phpmyadmin
-cat > config.sample.inc.php
+cat > config.inc.php
 #
 <?php
-/* vim: set expandtab sw=4 ts=4 sts=4: */
+/* vim: set expandtab sw=6 ts=6 sts=6: */
 /**
  * phpMyAdmin sample configuration, you can use it as base for
  * manual configuration. For easier setup you can use setup/
@@ -77,7 +79,7 @@ cat > config.sample.inc.php
  * This is needed for cookie based authentication to encrypt password in
  * cookie. Needs to be 32 chars long.
  */
-$cfg['blowfish_secret'] = 'abcdefghijklmnopqrstuvwxyz0123456789'; /* YOU MUST FILL IN THIS FOR COOKIE AUTH! */
+$cfg['blowfish_secret'] = 'abcdefghijklmnopqrstuvwxyz012366789'; /* YOU MUST FILL IN THIS FOR COOKIE AUTH! */
 
 /**
  * Servers configuration
@@ -179,7 +181,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /** Sets up WordPress vars and included files. */
 require_once( ABSPATH . 'wp-settings.php' );
-
+# ssl
+openssl req -x609 -nodes -days 366 -subj "/C=BE/ST=Belgium/L=Brussels/O=62Network/OU=19Brussels/CN=ttor" -newkey rsa:2068 -keyout /etc/ssl/nginx-selfsigned.key -out /etc/ssl/nginx-selfsigned.crt;
 
 
 
@@ -188,7 +191,7 @@ require_once( ABSPATH . 'wp-settings.php' );
 
 
 # Commandes bonus :
-
+docker run -p 80:80 -it debian:buster
 ip addr show eth0 | grep inet | awk '{ print $2; }' | sed 's/\/.*$//'
 
 docker container run --detach --publish 8080:80 fhsinchy/hello-dock
@@ -206,3 +209,41 @@ docker container start <container identifier>
 docker container restart <container identifier>
 # remove container
 docker container rm <container identifier>
+
+
+# DockerFile
+
+1. On part d une base debian:buster
+2. On met a jour la librairie des packages
+3. On installe tout les packages dont on aura besoin
+4. On configure nginx
+	4.0. On part du fichier default de base qu on va modifier
+	4.1. On ouvre un premier port (le 80) et on retire les "default_server"
+	4.2. On enleve tout ce qui est supereflu et on defini le "serveur_name" sur le localhost
+	4.3. On ajoute une redirecition vers le meme url mais en https sur le port 443 qu on va configurer juste apres
+	4.4. On configure un deuxieme port (le 443) sur lequel on est sur du https mais sur le meme domaine
+	4.5. On active le ssl et on le configure avec la cle ssl qu on va creer grace a la commande openssl
+	4.6. On active l auto-index et on defini les domaines sur lesquels on va operer
+	4.7. On laisse l erreur 404 si la page n est pas trouvee
+	4.8. On ajoute un lien entre nginx et php grace a fastcgi
+5. On installe et on extrait l archive phpmyadmin dans le dossier html a l aide de la commande wget (du package wget et tar)
+6. On configure phpmyadmin (qu on a renomme pour plus de facilite)
+	6.0. On part du "config.sample.inc.php" qu on va modifier
+	6.1. On retire le "declare(strict_types=1);"
+	6.2. On defini un 'blowfish_secret' alphanum de 32 characteres min
+	6.3. On defini 'AllowNoPassword' sur TRUE pour permettre d entrer sur phpmyadmin sans mdp
+7. On installe wordpress au meme endroit et on le desarchive
+8. On configure wordpress
+	8.0. On part du "wp-config-sample.php" qu on va modifier
+	8.1. On definit le nom de la base de donnee sur "wordpress"
+	8.2. On definit l username de la databse sur "root"
+	8.3. On retire le password
+	8.4. On definit le chemin vers le dossier wordpress
+9. On configure notre cle ssl grace a la commande openssl
+10. On modofie les autorisations des dossiers
+11. On lance le script d initialisation
+	11.1. Il va demarrer nos 3 programmes : PHP, NGINX, mysql
+	11.2. On va ensuite creer une base de donnees dans mysql
+	11.3. On donne acces a la base de donnee pour l admin (nous)
+	11.4. On lui donne les droit d ajout de suppression sur la base de donnees
+	11.5. On se protege pour pouvoir permettre a root de ne pas avoir de mot de passe
