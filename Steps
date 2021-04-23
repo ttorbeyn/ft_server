@@ -1,4 +1,4 @@
-# Commandes de base : 
+# Commandes de base :
 
 docker pull debian:buster
 docker container run --detach --publish 8080:80 debian:buster
@@ -247,3 +247,5 @@ docker container rm <container identifier>
 	11.3. On donne acces a la base de donnee pour l admin (nous)
 	11.4. On lui donne les droit d ajout de suppression sur la base de donnees
 	11.5. On se protege pour pouvoir permettre a root de ne pas avoir de mot de passe
+
+RUN echo "daemon off;" >> /etc/nginx/nginx.conf

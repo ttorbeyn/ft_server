@@ -34,6 +34,7 @@ RUN rm -rf /var/www/html/index.nginx-debian.html
 # INSTALL WORDPRESS
 RUN wget https://wordpress.org/latest.tar.gz
 RUN tar -xvzf latest.tar.gz && rm -rf latest.tar.gz
+RUN mv wordpress /var/www/html
 COPY ./srcs/wp-config.php /var/www/html/wordpress
 
 # CONFIGURE SSL
