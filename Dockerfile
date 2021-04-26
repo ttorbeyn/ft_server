@@ -1,3 +1,15 @@
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    Dockerfile                                         :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: ttorbeyn <ttorbeyn@student.s19.be>         +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2021/04/26 12:10:02 by ttorbeyn          #+#    #+#              #
+#    Updated: 2021/04/26 12:10:05 by ttorbeyn         ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+
 FROM debian:buster
 
 ENV AUTOINDEX on
@@ -21,15 +33,16 @@ RUN apt-get -y install \
 	php-mbstring
 
 # CONFIGURE NGINX
-COPY ./srcs/nginx_autoindex_off.config tmp
-COPY ./srcs/nginx_autoindex_on.config tmp
+RUN echo "daemon off;" >> /etc/nginx/nginx.conf
+RUN rm -rf /var/www/html/index.nginx-debian.html
+COPY ./srcs/nginx_autoindex_off.conf tmp
+COPY ./srcs/nginx_autoindex_on.conf tmp
 
 # INSTALL PHPMYADMIN
 RUN wget https://files.phpmyadmin.net/phpMyAdmin/5.0.1/phpMyAdmin-5.0.1-english.tar.gz
 RUN tar -xf phpMyAdmin-5.0.1-english.tar.gz && rm -rf phpMyAdmin-5.0.1-english.tar.gz
 RUN mv phpMyAdmin-5.0.1-english /var/www/html/phpmyadmin
 COPY ./srcs/config.inc.php /var/www/html/phpmyadmin
-RUN rm -rf /var/www/html/index.nginx-debian.html
 
 # INSTALL WORDPRESS
 RUN wget https://wordpress.org/latest.tar.gz
@@ -42,6 +55,9 @@ RUN openssl req -x509 -nodes -days 365 -subj "/C=BE/ST=Belgium/L=Brussels/O=42ne
 RUN chown -R www-data:www-data /var/www/html/*
 RUN chmod -R 755 /var/www/*
 
-COPY ./srcs/autoindex_off.sh tmp
-COPY ./srcs/init.sh tmp
-CMD bash tmp/init.sh
+COPY ./srcs/autoindex_off.sh ./
+COPY ./srcs/init.sh ./
+
+EXPOSE 80 443
+
+CMD bash init.sh
